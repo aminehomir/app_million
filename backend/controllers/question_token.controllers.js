@@ -1,4 +1,4 @@
-const Questiontoken = require('../models/question_token.model')
+// const Questiontoken = require('../models/question_token.model')
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 

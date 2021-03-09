@@ -5,10 +5,10 @@ const Schema = mongoose.Schema;
 const Final_winner = new Schema(
     {
     
-        id_round: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref : 'Round'
-        }],
+        id_group_members: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref : 'Gmemebrs'
+        },
 
         final_score: {
         type: Number,
@@ -16,7 +16,7 @@ const Final_winner = new Schema(
         },
 
         id_participant: {
-        type: Number,
+        type: String,
         required: true,
         },
 
@@ -34,6 +34,6 @@ const Final_winner = new Schema(
         }
     );
 
-    const Final_winnerlist = mongoose.model("Round_score", Final_winner);
+    const Final_winnerlist = mongoose.model("Final_winner", Final_winner);
     module.exports = Final_winnerlist;
   

@@ -1,111 +1,144 @@
 const Round = require('../models/round.model')
-const QuestionTkn = require('../models/question_token.model')
 const Question = require('../models/question.model')
-
-async function checkquestion(id){
-    try{
-        const  checkId = await Question.findOne(id)
-        return checkId
-    }catch(err){
-        console.log(err);
-    }
+const Gmembers = require('../models/g_memebrs.model');
 
 
-}
 
-async function checkscore(id){
-    try{
-        const  checkId = await QuestionTkn.findByIdAndUpdate(id,{$set: {score : 10}} )
-        return checkId
-    }catch(err){
-        console.log(err);
-    }
-
-
-}
-
-async function checkquestiontkn(id){
-    try{
-        const  checkId = await QuestionTkn.findOne(id)
-        return checkId
-    }catch(err){
-        console.log(err);
-    }
-
-
-}
-
-async function totalscore(id){
-    try{
-        const  checkId = await QuestionTkn.findOne(id)
-        return checkId
-    }catch(err){
-        console.log(err);
-    }
-
-
-}
-
-// async function finalwinner(idParticipant){
-//     const total=0
-
-//     if  (QuestionTkn.findOne(idParticipant))
-//     {
-//     try{
-//         const  score = await QuestionTkn.find(score)
-//         total+=score
-//     }catch(err){
-//         console.log(err);
-//     }
-//     return total
-
-//     }
-
-
-// }
-
-const addround = (async (req, res) => {
-
-    const id_group_members = req.body.id_group_members;
-    const id_question = req.body.id_question;
-    const id_question_token = req.body.id_question_token;
-
-
+const createRound = async (req, res) => {
     
-      const RoundPush = new  Round({
-        
-        id_group_members,
-        id_question,
-        id_question_token
-  
-       
-      });
-    
-      RoundPush
-        .save(async (err, result) =>{
+    let idgroup = req.body.id_group_members;
 
-            // db.restaurants.find( { "borough" : "Brooklyn" } ).count()
-            const checkQuestion = await checkquestion(result.id_question)
-            const checkQuestiontkn = await checkquestiontkn(result.id_question_token)
+    await Gmembers.findById(idgroup)
+            .then(groupe => {
+                    if (!groupe) {
+                            return res.status(404).send({
+                                    message: "group not found with id " + idgroup
+                            });
+                    }
+                    if (groupe.id_participant.length < 3) {
+                            return res.send({
+                                    message: "Ops you need 4 players to start the game  !"
+                            });
+                    }
 
 
-            const checkscoretotal = await  totalscore(result.score)
-        //    console.log(checkscore);
-             let score = checkscoretotal.score;
-            let answer = checkQuestion.answer;
-            let participant_answer = checkQuestiontkn.participant_answer;
+
+
+                    let id_group_members = idgroup;
+                    let id_question = req.body.id_question;
+                    let id_participant = req.body.id_participant;
+                    let participant_answer = req.body.participant_answer;
+                   
+                   
+                   
+                
+                   
+                   
+                    (async () => {
+
+                        let score = await CheckScoreParticipant(idgroup,id_participant);
+                        
+                       
+                        
+                        // let score = await CheckScoreParticipant(id_group_members,id_participant);
+                       
+
+                            // console.log(score);
+
+                            // check if the answer is correct then update score 
+                            let check = await CheckAnswer(participant_answer, id_question)
+                            if (check == true) {
+                                score = score + 10;
+                                console.log(score);
+
+                        }
+                          
+                       
+                            const RoundPush = new Round({
+
+                                    id_group_members: id_group_members,
+                                    id_question: id_question,
+                                    id_participant: id_participant,
+                                    participant_answer: participant_answer,
+                                    score: score,
+                                    
+
+
+                            });
+                          
+                            
+                            RoundPush
+                                    .save()
+
+                                    .then((data) => {
+                                            res.send(data);
+                                            res.json("Round  successfully saved")
+
+                                    }).catch((err) => res.status(400).json("Error :" + err));
+                               
+                           }) ()
+                            }).catch(err => {
+
+                                    return res.status(500).send({
+                                            message: "Error retrieving group with id " + idgroup
+                                    });
+                            });
+                       
+
+
+
+   
+}
+
+async function CheckAnswer(participant_answer, id_question) {
+
+   
+    question = await Question.findById(id_question)
+    if (question.answer == participant_answer) {
+
             
+            return true
+            
+    }else{
+            return false
+    }
 
-            console.log(score);
-            if(answer == participant_answer){
-              await  checkscore(result.id_question_token)
+
+
+}
+
+async function CheckScoreParticipant(id_group_members, id_participant) {
+
+    let scoreArray = [0];
+    round = await Round.find({
+            id_group_members: id_group_members,
+            id_participant: id_participant
+    })
+
+    if (round) {
+
+            for (let i = 0; i < round.length; i++) {
+
+                   scoreArray.push(round[i].score)
+
             }
-        })
-        // .then(() => res.json(" Round successfully added"))
-        // .catch((err) =>  res.status(400).json("Error :" + err));
-})
+
+
+
+            return Math.max(...scoreArray)
+
+    } else {
+            return 0
+
+    }
+
+    
+
+    
+
+}
 
 
 module.exports = {
-    addround
+    createRound
 };
